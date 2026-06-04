@@ -118,8 +118,8 @@ async def delete_user(
 
 
 @router.get('/{user_id}', response_model=UserPublic)
-def read_user(user_id: int, session: Session):
-    db_user = session.scalar(select(User).where(User.id == user_id))
+async def read_user(user_id: int, session: Session):
+    db_user = await session.scalar(select(User).where(User.id == user_id))
     if not db_user:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail='User not found'
