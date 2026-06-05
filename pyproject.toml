@@ -40,6 +40,9 @@ concurrency = ["thread", "greenlet"]
 [tool.typos.files]
 extend-exclude = ["*.md"]
 
+[tool.typos.default.extend-words]
+selectin = "selectin"
+
 [tool.taskipy.tasks]
 pre_lint = 'typos'
 lint = 'ruff check'
