@@ -2,7 +2,9 @@ from http import HTTPStatus
 
 import factory.fuzzy
 import pytest
-from sqlalchemy import select
+
+# from sqlalchemy import select
+from sqlalchemy.exc import DataError
 
 from fast_pulse.models import Todo, TodoState, User
 
@@ -250,7 +252,15 @@ async def test_create_todo_error(session, user: User):
     )
 
     session.add(todo)
-    await session.commit()
 
-    with pytest.raises(LookupError):
-        await session.scalar(select(Todo))
+    # Versão anterior (válida apenas no SQLite, onde o enum é gravado como
+    # texto e o error só aparece na leitura ao converter para TodoState):
+    # await session.commit()
+    #
+    # with pytest.raises(LookupError):
+    #     await session.scalar(select(Todo))
+
+    # No PostgreSQL o `state` é um ENUM nativo, então o valor inválido
+    # é rejeitado já no INSERT (commit), lançando DataError.
+    with pytest.raises(DataError):
+        await session.commit()
