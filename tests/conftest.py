@@ -7,12 +7,12 @@ import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from testcontainers.postgres import PostgresContainer
 
 from fast_pulse.app import app
 from fast_pulse.database import get_session
 from fast_pulse.models import User, table_registry
 from fast_pulse.security import get_password_hash
-from fast_pulse.settings import Settings
 
 
 @pytest.fixture
@@ -27,8 +27,15 @@ def client(session):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(scope='session')  # cria o engine apenas uma vez por teste
+def engine():
+    with PostgresContainer('postgres:17', driver='psycopg') as postgres:
+        _engine = create_async_engine(postgres.get_connection_url())
+        yield _engine
+
+
 @pytest_asyncio.fixture
-async def session():
+async def session(engine):
     # engine = create_async_engine(
     #     'sqlite+aiosqlite:///:memory:',
     #     connect_args={'check_same_thread': False},
@@ -36,7 +43,10 @@ async def session():
     # ) caso queira usar sqlite em memória para os testes,
     # mas o postgres é mais rápido e mais próximo do ambiente de produção
 
-    engine = create_async_engine(Settings().DATABASE_URL)
+    # engine = create_async_engine(Settings().DATABASE_URL)
+    # usamos create_async_engine(Settings().DATABASE_URL) o bd está em prd
+    # with PostgresContainer('postgres:17', driver='psycopg') as postgres:
+    #     engine = create_async_engine(postgres.get_connection_url())
 
     async with engine.begin() as conn:
         await conn.run_sync(table_registry.metadata.create_all)
